@@ -1,9 +1,16 @@
 define :opsworks_play2 do
     application = params[:app]
     deploy = params[:deploy_data]
+    application_start_bin = application
 
     app_dir    = File.expand_path(File.join(deploy[:deploy_to], "current", deploy[:scm][:app_dir] || '.'))
     shared_dir = File.join(deploy[:deploy_to], "shared")
+
+    File.readlines( File.join( app_dir, 'build.sbt' ) ).each do |l|
+      if l =~ /^\s*name\s*:=\s*("|""")([^"]+)\1[^"]\s*$/
+        application_start_bin = $2
+      end
+    end
 
     # Create deploy user and group if needed
     group deploy[:group]
@@ -102,6 +109,7 @@ define :opsworks_play2 do
           variables({
             :name => application,
             :path => app_dir,
+            :start_bin => application_start_bin,
             :deploy_to => deploy[:deploy_to],
             :options => play_options(),
             :env_vars => env_vars()
